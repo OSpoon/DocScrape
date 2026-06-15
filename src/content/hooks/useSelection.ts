@@ -1,24 +1,26 @@
-import type { RuntimeMessage, SelectionController, SelectionState, UiState } from '../types'
+import type { RuntimeMessage, SelectionController, SelectionItem, SelectionState, UiState } from '../types'
 import { useEffect, useRef, useState } from 'react'
 import { generateSelector, isDocScrapeUiElement, markUiElement } from '../lib/dom'
 import { createMarkdownPayload } from '../lib/markdown'
 import { addRuntimeMessageListener, removeRuntimeMessageListener, sendRuntimeMessage } from '../lib/runtime'
 
-export function useSelection() {
+export function useSelection(shadowRoot: ShadowRoot) {
   const [ui, setUi] = useState<UiState>({ mode: 'hidden' })
-  const uiModeRef = useRef(ui.mode)
+  const uiRef = useRef(ui)
   const controllerRef = useRef<SelectionController | null>(null)
   const stateRef = useRef<SelectionState>({
     selectionEnabled: false,
     pointerListenersActive: false,
     selectedElement: null,
+    selectedItems: [],
+    selectedHighlights: [],
     hoveredElement: null,
     highlight: null,
     turndown: null,
     messageListener: null,
   })
 
-  uiModeRef.current = ui.mode
+  uiRef.current = ui
 
   useEffect(() => {
     const state = stateRef.current
@@ -29,7 +31,7 @@ export function useSelection() {
         return
       const el = markUiElement(document.createElement('div')) as HTMLDivElement
       el.style.cssText = 'position:fixed;pointer-events:none;z-index:2147483646;display:none;'
-      document.body.appendChild(el)
+      shadowRoot.appendChild(el)
       state.highlight = el
     }
 
@@ -50,6 +52,34 @@ export function useSelection() {
           + `box-shadow:${shadow};background:rgba(37,99,235,0.05);display:block;`
     }
 
+    function updateSelectedOverlay(overlay: HTMLDivElement, el: Element) {
+      const rect = el.getBoundingClientRect()
+      overlay.style.cssText
+        = `position:fixed;pointer-events:none;z-index:2147483645;`
+          + `top:${rect.top}px;left:${rect.left}px;`
+          + `width:${rect.width}px;height:${rect.height}px;`
+          + `border:2px solid rgba(37,99,235,0.72);border-radius:8px;box-sizing:border-box;`
+          + `box-shadow:0 0 0 4px rgba(37,99,235,0.1);background:rgba(37,99,235,0.04);`
+    }
+
+    function createSelectedOverlay(el: Element) {
+      const overlay = markUiElement(document.createElement('div')) as HTMLDivElement
+      updateSelectedOverlay(overlay, el)
+      shadowRoot.appendChild(overlay)
+      state.selectedHighlights.push({ element: el, overlay })
+    }
+
+    function updateSelectedOverlays() {
+      for (const item of state.selectedHighlights)
+        updateSelectedOverlay(item.overlay, item.element)
+    }
+
+    function clearSelectedOverlays() {
+      for (const item of state.selectedHighlights)
+        item.overlay.remove()
+      state.selectedHighlights = []
+    }
+
     function hideHighlight() {
       if (state.highlight)
         state.highlight.style.display = 'none'
@@ -63,22 +93,25 @@ export function useSelection() {
           + 'padding:10px 16px;border-radius:999px;'
           + 'font:700 14px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;'
           + 'box-shadow:0 18px 42px rgba(127,29,29,0.25);'
+          + 'pointer-events:auto;'
       msg.textContent = `Error: ${message}`
-      document.body.appendChild(msg)
+      shadowRoot.appendChild(msg)
       const timeoutId = setTimeout(() => msg.remove(), 4000)
       errorTimeoutIds.push(timeoutId)
     }
 
     function clearSelectionState() {
       state.selectedElement = null
+      state.selectedItems = []
       state.hoveredElement = null
+      clearSelectedOverlays()
     }
 
     function showPickingState() {
       clearSelectionState()
       createHighlightOverlay()
       hideHighlight()
-      setUi({ mode: 'picking' })
+      setUi({ mode: 'picking', count: 0 })
       document.body.style.cursor = 'crosshair'
     }
 
@@ -98,20 +131,141 @@ export function useSelection() {
       state.pointerListenersActive = true
     }
 
-    function doConvert(el: Element) {
-      exitSelection()
+    function addMoreSelection() {
+      if (!state.selectionEnabled)
+        state.selectionEnabled = true
+      state.pointerListenersActive = true
+      state.selectedElement = null
+      state.hoveredElement = null
+      createHighlightOverlay()
+      hideHighlight()
+      setUi({ mode: 'picking', count: state.selectedItems.length })
+      document.body.style.cursor = 'crosshair'
+    }
+
+    function getCombinedMarkdown(items: SelectionItem[]) {
+      return items
+        .map(item => item.markdown.trim())
+        .filter(Boolean)
+        .join('\n\n---\n\n')
+    }
+
+    function getSelectionSummary(items: SelectionItem[]) {
+      const latest = items.at(-1)
+      if (!latest)
+        return 'body'
+      if (items.length === 1)
+        return latest.selector
+      return `${items.length} 个元素 · ${latest.selector}`
+    }
+
+    function setSelectedElement(el: Element) {
       try {
         const { markdown, filename } = createMarkdownPayload(state, el.outerHTML)
-        sendRuntimeMessage({ type: 'download', content: markdown, filename })
+        const item = {
+          element: el,
+          selector: generateSelector(el),
+          markdown,
+        }
+        state.selectedItems = [...state.selectedItems, item]
+        state.selectedElement = el
+        createSelectedOverlay(el)
+        hideHighlight()
+        state.pointerListenersActive = false
+        setUi({
+          mode: 'selected',
+          count: state.selectedItems.length,
+          selector: getSelectionSummary(state.selectedItems),
+          markdown: getCombinedMarkdown(state.selectedItems),
+          filename,
+          previewOpen: false,
+          copyState: 'idle',
+          downloadState: 'idle',
+        })
       }
       catch (e) {
         showError(e instanceof Error ? e.message : String(e))
       }
     }
 
-    function convertSelected() {
-      if (state.selectedElement)
-        doConvert(state.selectedElement)
+    async function writeClipboard(text: string) {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text)
+        return
+      }
+
+      const textarea = markUiElement(document.createElement('textarea'))
+      textarea.value = text
+      textarea.setAttribute('readonly', '')
+      textarea.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;'
+      document.body.appendChild(textarea)
+      textarea.select()
+      const copied = document.execCommand('copy')
+      textarea.remove()
+      if (!copied)
+        throw new Error('Clipboard copy failed')
+    }
+
+    function copySelected() {
+      const current = uiRef.current
+      if (current.mode !== 'selected')
+        return
+      setUi({ ...current, copyState: 'idle' })
+      void writeClipboard(current.markdown)
+        .then(() => {
+          setUi((latest) => {
+            if (latest.mode !== 'selected')
+              return latest
+            return { ...latest, copyState: 'copied' }
+          })
+        })
+        .catch(() => {
+          setUi((latest) => {
+            if (latest.mode !== 'selected')
+              return latest
+            return { ...latest, copyState: 'failed' }
+          })
+        })
+    }
+
+    function downloadSelected() {
+      const current = uiRef.current
+      if (current.mode !== 'selected' || current.downloadState === 'saving')
+        return
+      setUi({ ...current, downloadState: 'saving' })
+      sendRuntimeMessage({ type: 'download', content: current.markdown, filename: current.filename })
+        .then(() => {
+          if (uiRef.current.mode !== 'selected')
+            return
+          setUi((latest) => {
+            if (latest.mode !== 'selected')
+              return latest
+            return { ...latest, downloadState: 'done' }
+          })
+          // eslint-disable-next-line react/web-api-no-leaked-timeout
+          const dlTimeoutId = setTimeout(() => {
+            if (uiRef.current.mode === 'selected')
+              exitSelection()
+          }, 1200)
+          errorTimeoutIds.push(dlTimeoutId)
+        })
+        .catch(() => {
+          if (uiRef.current.mode !== 'selected')
+            return
+          setUi((latest) => {
+            if (latest.mode !== 'selected')
+              return latest
+            return { ...latest, downloadState: 'error' }
+          })
+        })
+    }
+
+    function togglePreview() {
+      setUi((current) => {
+        if (current.mode !== 'selected')
+          return current
+        return { ...current, previewOpen: !current.previewOpen }
+      })
     }
 
     function enableSelection() {
@@ -135,38 +289,37 @@ export function useSelection() {
     }
 
     function handleScroll() {
-      if (!state.selectionEnabled || !state.pointerListenersActive || !state.hoveredElement)
-        return
-      updateHighlight(state.hoveredElement, false)
+      updateSelectedOverlays()
+      if (state.selectionEnabled && state.pointerListenersActive) {
+        hideHighlight()
+        state.hoveredElement = null
+      }
     }
 
     function handleClick(e: MouseEvent) {
       if (!state.selectionEnabled || !state.pointerListenersActive)
         return
-      const el = e.target instanceof Element ? e.target : null
+      const el = document.elementFromPoint(e.clientX, e.clientY)
       if (!el || isDocScrapeUiElement(el))
         return
       e.preventDefault()
       e.stopPropagation()
-      state.selectedElement = el
-      updateHighlight(el, true)
-      state.pointerListenersActive = false
-      setUi({ mode: 'selected', selector: generateSelector(el) })
+      setSelectedElement(el)
     }
 
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key !== 'Escape')
         return
-      if (uiModeRef.current === 'selected')
-        resetSelectionForAnotherPick()
-      else if (state.selectionEnabled)
-        exitSelection()
+      exitSelection()
     }
 
     controllerRef.current = {
+      addMoreSelection,
       exitSelection,
       resetSelectionForAnotherPick,
-      convertSelected,
+      copySelected,
+      downloadSelected,
+      togglePreview,
     }
 
     state.messageListener = (message, sender, sendResponse) => {
@@ -191,6 +344,7 @@ export function useSelection() {
 
     document.addEventListener('mousemove', handleMouseMove, true)
     window.addEventListener('scroll', handleScroll, true)
+    window.addEventListener('resize', handleScroll, true)
     document.addEventListener('click', handleClick, true)
     document.addEventListener('keydown', handleKeyDown, true)
 
@@ -198,6 +352,7 @@ export function useSelection() {
       controllerRef.current = null
       document.removeEventListener('mousemove', handleMouseMove, true)
       window.removeEventListener('scroll', handleScroll, true)
+      window.removeEventListener('resize', handleScroll, true)
       document.removeEventListener('click', handleClick, true)
       document.removeEventListener('keydown', handleKeyDown, true)
       for (const timeoutId of errorTimeoutIds)
@@ -217,7 +372,7 @@ export function useSelection() {
         state.messageListener = null
       }
     }
-  }, [])
+  }, [shadowRoot])
 
   return { ui, controllerRef }
 }

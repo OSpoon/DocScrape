@@ -3,11 +3,11 @@ import { isFirefoxLike } from '../constants'
 
 type RuntimeMessageListener = Parameters<typeof browser.runtime.onMessage.addListener>[0]
 
-export function sendRuntimeMessage(message: unknown) {
+export function sendRuntimeMessage(message: unknown): Promise<unknown> {
   if (isFirefoxLike)
-    browser.runtime.sendMessage(message)
+    return browser.runtime.sendMessage(message) as Promise<unknown>
   else
-    chrome.runtime.sendMessage(message)
+    return chrome.runtime.sendMessage(message) as Promise<unknown>
 }
 
 export function addRuntimeMessageListener(listener: MessageListener) {

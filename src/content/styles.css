@@ -57,7 +57,8 @@
 
 .content_script .docscrape-hint-exit,
 .content_script .docscrape-secondary,
-.content_script .docscrape-primary {
+.content_script .docscrape-primary,
+.content_script .docscrape-close {
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.12s ease;
@@ -88,51 +89,287 @@
   pointer-events: none;
 }
 
-.content_script .docscrape-dialog-bar {
+.content_script .docscrape-dialog-shell {
   pointer-events: auto;
   display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(520px, calc(100vw - 32px));
+  max-height: min(420px, calc(100vh - 44px));
+  animation: docscrape-rise-up 0.14s ease-out;
+}
+
+.content_script .docscrape-preview {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: min(320px, calc(100vh - 142px));
+  border: 1px solid rgba(203, 213, 225, 0.95);
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  box-shadow: 0 20px 58px rgba(15, 23, 42, 0.18), 0 2px 8px rgba(15, 23, 42, 0.08);
+}
+
+.content_script .docscrape-preview-header {
+  display: flex;
   align-items: center;
-  gap: 10px;
-  width: max-content;
-  max-width: calc(100vw - 32px);
-  padding: 8px;
-  border: 1px solid rgba(203, 213, 225, 0.92);
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #e5e7eb;
+  color: #111827;
+  font: 12px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.content_script .docscrape-preview-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 800;
+}
+
+.content_script .docscrape-preview-count {
+  flex: 0 0 auto;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.content_script .docscrape-preview-content {
+  display: block;
+  width: 100%;
+  min-height: 140px;
+  max-height: 260px;
+  resize: vertical;
+  border: 0;
+  outline: 0;
+  margin: 0;
+  padding: 10px 12px;
+  overflow: auto;
+  color: #111827;
+  background: #f8fafc;
+  font: 11px/1.6 "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+.content_script .docscrape-preview-toggle {
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding: 2px 8px;
+  border: 1px solid #cbd5e1;
   border-radius: 999px;
+  background: #fff;
+  color: #475569;
+  font: inherit;
+  font-weight: 700;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.content_script .docscrape-preview-toggle:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.content_script .docscrape-preview-rendered {
+  width: 100%;
+  min-height: 140px;
+  max-height: 260px;
+  padding: 14px 16px;
+  overflow: auto;
+  color: #111827;
+  background: #f8fafc;
+  font: 13px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.content_script .docscrape-preview-rendered > *:first-child {
+  margin-top: 0;
+}
+
+.content_script .docscrape-preview-rendered > *:last-child {
+  margin-bottom: 0;
+}
+
+.content_script .docscrape-preview-rendered h1,
+.content_script .docscrape-preview-rendered h2 {
+  font-size: 1.15em;
+  margin: 1em 0 0.5em;
+  font-weight: 800;
+  line-height: 1.3;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 0.3em;
+}
+
+.content_script .docscrape-preview-rendered h3,
+.content_script .docscrape-preview-rendered h4 {
+  font-size: 1.05em;
+  margin: 0.8em 0 0.4em;
+  font-weight: 700;
+}
+
+.content_script .docscrape-preview-rendered p {
+  margin: 0.5em 0;
+}
+
+.content_script .docscrape-preview-rendered a {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.content_script .docscrape-preview-rendered ul,
+.content_script .docscrape-preview-rendered ol {
+  margin: 0.4em 0;
+  padding-left: 1.6em;
+}
+
+.content_script .docscrape-preview-rendered li {
+  margin: 0.2em 0;
+}
+
+.content_script .docscrape-preview-rendered code {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.9em;
+  background: #eef4ff;
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  color: #1e40af;
+}
+
+.content_script .docscrape-preview-rendered pre {
+  background: #1e293b;
+  color: #e2e8f0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  overflow-x: auto;
+  font: 11px/1.55 "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  margin: 0.6em 0;
+}
+
+.content_script .docscrape-preview-rendered pre code {
+  background: none;
+  padding: 0;
+  color: inherit;
+  font-size: inherit;
+}
+
+.content_script .docscrape-preview-rendered blockquote {
+  margin: 0.6em 0;
+  padding: 0.2em 0.8em;
+  border-left: 3px solid #2563eb;
+  color: #475569;
+  background: rgba(37, 99, 235, 0.04);
+  border-radius: 0 6px 6px 0;
+}
+
+.content_script .docscrape-preview-rendered table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.6em 0;
+  font-size: 0.9em;
+}
+
+.content_script .docscrape-preview-rendered th,
+.content_script .docscrape-preview-rendered td {
+  border: 1px solid #d1d5db;
+  padding: 6px 10px;
+  text-align: left;
+}
+
+.content_script .docscrape-preview-rendered th {
+  background: #eef4ff;
+  font-weight: 700;
+}
+
+.content_script .docscrape-preview-rendered hr {
+  border: 0;
+  border-top: 1px solid #d1d5db;
+  margin: 1em 0;
+}
+
+.content_script .docscrape-preview-rendered img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+
+.content_script .docscrape-preview-rendered strong {
+  font-weight: 800;
+}
+
+.content_script .docscrape-dialog-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+  padding: 6px;
+  border: 1px solid rgba(203, 213, 225, 0.92);
+  border-radius: 16px;
   background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(18px) saturate(140%);
   -webkit-backdrop-filter: blur(18px) saturate(140%);
   color: #111827;
-  box-shadow: 0 20px 58px rgba(15, 23, 42, 0.2), 0 2px 8px rgba(15, 23, 42, 0.08);
-  font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  animation: docscrape-rise-up 0.14s ease-out;
+  box-shadow: 0 12px 36px rgba(15, 23, 42, 0.18), 0 2px 8px rgba(15, 23, 42, 0.08);
+  font: 13px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.content_script .docscrape-dialog-row-primary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.content_script .docscrape-dialog-row-secondary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding-top: 5px;
+  padding-left: 16px;
+  padding-right: 16px;
+  border-top: 1px solid rgba(203, 213, 225, 0.5);
+  animation: docscrape-fade-in 0.1s ease-out;
+}
+
+.content_script .docscrape-dialog-row-secondary > button {
+  justify-content: center;
+  width: 100%;
+}
+
+.content_script .docscrape-dialog-actions-primary {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
 }
 
 .content_script .docscrape-dialog-summary {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 6px;
   min-width: 0;
   flex: 1 1 auto;
-  padding-left: 4px;
+  padding-left: 2px;
 }
 
 .content_script .docscrape-dialog-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 22px;
+  height: 22px;
   border-radius: 999px;
   background: #2563eb;
   color: #fff;
-  font: 700 16px/1 Arial, sans-serif;
+  font: 700 13px/1 Arial, sans-serif;
   flex: 0 0 auto;
 }
 
 .content_script .docscrape-dialog-title {
   font-weight: 800;
-  font-size: 13px;
-  line-height: 1.35;
+  font-size: 12px;
+  line-height: 1.3;
   color: #111827;
   white-space: nowrap;
 }
@@ -140,34 +377,40 @@
 .content_script .docscrape-dialog-selector {
   display: block;
   min-width: 0;
-  max-width: min(430px, calc(100vw - 390px));
+  max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   background: #eef4ff;
   color: #2563eb;
-  padding: 5px 9px;
+  padding: 3px 7px;
   border-radius: 999px;
   border: 1px solid #dbeafe;
-  font: 700 12px/1.35 "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font: 700 11px/1.3 "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
 }
 
-.content_script .docscrape-dialog-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 0 0 auto;
+.content_script .docscrape-dialog-filename {
+  display: block;
+  min-width: 0;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #64748b;
+  font-weight: 700;
+  font-size: 11px;
 }
 
 .content_script .docscrape-secondary,
 .content_script .docscrape-primary {
-  min-height: 38px;
+  min-height: 32px;
   border-radius: 999px;
-  font-weight: 800;
+  font-weight: 700;
+  font-size: 12px;
 }
 
 .content_script .docscrape-secondary {
-  padding: 0 15px;
+  padding: 0 11px;
   border: 1px solid #cbd5e1;
   background: #fff;
   color: #475569;
@@ -179,16 +422,68 @@
 }
 
 .content_script .docscrape-primary {
-  padding: 0 17px;
+  padding: 0 14px;
   border: 1px solid #1d4ed8;
   background: #2563eb;
   color: #fff;
-  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.24);
+  box-shadow: 0 6px 14px rgba(37, 99, 235, 0.22);
 }
 
 .content_script .docscrape-primary:hover {
   background: #1d4ed8;
-  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.28);
+}
+
+.content_script .docscrape-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #64748b;
+  font: 800 18px/1 Arial, sans-serif;
+}
+
+.content_script .docscrape-close:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+
+
+@media (max-width: 560px) {
+  .content_script .docscrape-dialog {
+    padding: 0 10px 12px;
+  }
+
+  .content_script .docscrape-dialog-shell {
+    width: calc(100vw - 20px);
+  }
+
+  .content_script .docscrape-dialog-row-primary {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .content_script .docscrape-dialog-row-secondary {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+
+  .content_script .docscrape-dialog-summary {
+    width: 100%;
+  }
+
+  .content_script .docscrape-dialog-selector {
+    max-width: none;
+  }
+
+  .content_script .docscrape-dialog-filename {
+    display: none;
+  }
 }
 
 @keyframes docscrape-fade-in {

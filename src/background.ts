@@ -66,21 +66,22 @@ function getDownloadFilename(filename: string): string {
   return name
 }
 
-function doDownload(content: string, filename: string) {
+function doDownload(content: string, filename: string): Promise<void> {
   const dataUrl = `data:text/markdown;charset=utf-8,${encodeURIComponent(content)}`
-  browser.downloads.download({
+  return browser.downloads.download({
     url: dataUrl,
     filename: getDownloadFilename(filename),
     saveAs: false,
     conflictAction: 'uniquify',
-  })
+  }).then(() => {})
 }
 
-browser.runtime.onMessage.addListener((message: unknown) => {
+browser.runtime.onMessage.addListener((message: unknown, _sender, sendResponse) => {
   const msg = message as { type?: string, content?: string, filename?: string }
-  if (!msg)
-    return
-  if (msg.type === 'download') {
+  if (msg?.type === 'download') {
     doDownload(msg.content || '', msg.filename || '')
+      .then(() => sendResponse({ success: true }))
+      .catch((err: Error) => sendResponse({ error: err.message }))
   }
+  return true
 })

@@ -5,6 +5,17 @@ export type RuntimeMessage
     | { type: 'convert-page' }
     | { type: 'download', content: string, filename: string }
 
+export interface SelectionItem {
+  element: Element
+  selector: string
+  markdown: string
+}
+
+export interface SelectionHighlight {
+  element: Element
+  overlay: HTMLDivElement
+}
+
 export type MessageListener = (
   message: unknown,
   sender: unknown,
@@ -13,13 +24,24 @@ export type MessageListener = (
 
 export type UiState
   = | { mode: 'hidden' }
-    | { mode: 'picking' }
-    | { mode: 'selected', selector: string }
+    | { mode: 'picking', count?: number }
+    | {
+      mode: 'selected'
+      count: number
+      selector: string
+      markdown: string
+      filename: string
+      previewOpen: boolean
+      copyState: 'idle' | 'copied' | 'failed'
+      downloadState: 'idle' | 'saving' | 'done' | 'error'
+    }
 
 export interface SelectionState {
   selectionEnabled: boolean
   pointerListenersActive: boolean
   selectedElement: Element | null
+  selectedItems: SelectionItem[]
+  selectedHighlights: SelectionHighlight[]
   hoveredElement: Element | null
   highlight: HTMLDivElement | null
   turndown: TurndownService | null
@@ -27,7 +49,10 @@ export interface SelectionState {
 }
 
 export interface SelectionController {
+  addMoreSelection: () => void
   exitSelection: () => void
   resetSelectionForAnotherPick: () => void
-  convertSelected: () => void
+  copySelected: () => void
+  downloadSelected: () => void
+  togglePreview: () => void
 }

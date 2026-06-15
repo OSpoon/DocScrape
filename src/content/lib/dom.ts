@@ -1,6 +1,6 @@
 import { uiMarker } from '../constants'
 
-export function markUiElement(el: HTMLElement) {
+export function markUiElement<T extends HTMLElement>(el: T) {
   el.setAttribute(uiMarker, '')
   return el
 }

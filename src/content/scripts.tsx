@@ -1,4 +1,5 @@
 import ReactDOM from 'react-dom/client'
+import { uiMarker } from './constants'
 import ContentApp from './ContentApp'
 import './styles.css'
 
@@ -10,6 +11,7 @@ import './styles.css'
 export default function initial() {
   const rootDiv = document.createElement('div')
   rootDiv.setAttribute('data-extension-root', 'true')
+  rootDiv.setAttribute(uiMarker, '')
   rootDiv.style.cssText
     = 'position:fixed;inset:0;z-index:2147483647;pointer-events:none;overflow:visible;'
   document.body.appendChild(rootDiv)
@@ -27,7 +29,7 @@ export default function initial() {
   const mountingPoint = ReactDOM.createRoot(shadowRoot)
   mountingPoint.render(
     <div className="content_script">
-      <ContentApp />
+      <ContentApp shadowRoot={shadowRoot} />
     </div>,
   )
 
