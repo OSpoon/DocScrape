@@ -1,7 +1,8 @@
 import type { RuntimeMessage, SelectionController, SelectionItem, SelectionState, UiState } from '../types'
 import { useEffect, useRef, useState } from 'react'
+import { getConfig } from '../../lib/config'
 import { generateSelector, isDocScrapeUiElement, markUiElement } from '../lib/dom'
-import { createMarkdownPayload } from '../lib/markdown'
+import { createMarkdownPayload, embedImagesAsBase64 } from '../lib/markdown'
 import { addRuntimeMessageListener, removeRuntimeMessageListener, sendRuntimeMessage } from '../lib/runtime'
 
 export function useSelection(shadowRoot: ShadowRoot) {
@@ -18,6 +19,7 @@ export function useSelection(shadowRoot: ShadowRoot) {
     highlight: null,
     turndown: null,
     messageListener: null,
+    config: null,
   })
 
   uiRef.current = ui
@@ -25,6 +27,21 @@ export function useSelection(shadowRoot: ShadowRoot) {
   useEffect(() => {
     const state = stateRef.current
     const errorTimeoutIds: ReturnType<typeof setTimeout>[] = []
+
+    function loadConfig() {
+      return getConfig().then((config) => {
+        state.config = config
+        state.turndown = null
+      })
+    }
+
+    function handleStorageChange(changes: Record<string, chrome.storage.StorageChange>) {
+      if (changes.docscrape_config)
+        void loadConfig()
+    }
+
+    void loadConfig()
+    chrome.storage.onChanged.addListener(handleStorageChange)
 
     function createHighlightOverlay() {
       if (state.highlight)
@@ -159,12 +176,15 @@ export function useSelection(shadowRoot: ShadowRoot) {
       return `${items.length} 个元素 · ${latest.selector}`
     }
 
-    function setSelectedElement(el: Element) {
+    async function setSelectedElement(el: Element) {
       try {
-        const { markdown, filename } = createMarkdownPayload(state, el.outerHTML)
+        const selector = generateSelector(el)
+        let { markdown, filename } = createMarkdownPayload(state, el.outerHTML, selector)
+        if (state.config?.downloadImages)
+          markdown = await embedImagesAsBase64(markdown)
         const item = {
           element: el,
-          selector: generateSelector(el),
+          selector,
           markdown,
         }
         state.selectedItems = [...state.selectedItems, item]
@@ -333,13 +353,17 @@ export function useSelection(shadowRoot: ShadowRoot) {
         enableSelection()
       }
       else if (msg.type === 'convert-page') {
-        try {
-          const { markdown, filename } = createMarkdownPayload(state, document.body.innerHTML)
-          sendResponse({ markdown, filename })
-        }
-        catch (e) {
-          sendResponse({ error: e instanceof Error ? e.message : String(e) })
-        }
+        void (async () => {
+          try {
+            let { markdown, filename } = createMarkdownPayload(state, document.body.innerHTML, 'body')
+            if (state.config?.downloadImages)
+              markdown = await embedImagesAsBase64(markdown)
+            sendResponse({ markdown, filename })
+          }
+          catch (e) {
+            sendResponse({ error: e instanceof Error ? e.message : String(e) })
+          }
+        })()
         return true
       }
     }
@@ -376,6 +400,7 @@ export function useSelection(shadowRoot: ShadowRoot) {
         removeRuntimeMessageListener(state.messageListener)
         state.messageListener = null
       }
+      chrome.storage.onChanged.removeListener(handleStorageChange)
     }
   }, [shadowRoot])
 

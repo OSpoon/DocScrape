@@ -1,9 +1,16 @@
 import type TurndownService from 'turndown'
+import type { DocScrapeConfig } from '../lib/config'
+
+export interface MarkdownConfig {
+  headingStyle: 'atx' | 'setext'
+  codeBlockStyle: 'fenced' | 'indented'
+}
 
 export type RuntimeMessage
   = | { type: 'enable-selection' }
     | { type: 'convert-page' }
     | { type: 'download', content: string, filename: string }
+    | { type: 'fetch-image', url: string }
 
 export interface SelectionItem {
   element: Element
@@ -46,6 +53,7 @@ export interface SelectionState {
   highlight: HTMLDivElement | null
   turndown: TurndownService | null
   messageListener: MessageListener | null
+  config: DocScrapeConfig | null
 }
 
 export interface SelectionController {

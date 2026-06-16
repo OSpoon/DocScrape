@@ -3,8 +3,8 @@
   "chromium:manifest_version": 3,
   "firefox:manifest_version": 2,
   "version": "1.0.6",
-  "name": "DocScrape",
-  "description": "Browser extension to select HTML elements and convert them to Markdown.",
+  "name": "DocScrape - 将 HTML 转换为 Markdown",
+  "description": "用于选择 HTML 元素并将其转换为 Markdown 的浏览器扩展程序。",
   "icons": {
     "16": "images/icon.png",
     "32": "images/icon.png",
@@ -15,7 +15,8 @@
   "permissions": [
     "activeTab",
     "downloads",
-    "contextMenus"
+    "contextMenus",
+    "storage"
   ],
   "host_permissions": [
     "<all_urls>"
@@ -24,6 +25,7 @@
     "chromium:service_worker": "background.ts",
     "firefox:scripts": ["background.ts"]
   },
+  "options_page": "options.html",
   "content_scripts": [
     {
       "matches": ["<all_urls>"],

@@ -1,13 +1,15 @@
-import type { SelectionState } from '../types'
+import type { MarkdownConfig, SelectionState } from '../types'
 import TurndownService from 'turndown'
 import { gfm } from 'turndown-plugin-gfm'
+import { applyTemplate } from '../../lib/config'
 import { uiMarker } from '../constants'
+import { sendRuntimeMessage } from './runtime'
 
-function getTurndown(state: SelectionState) {
+function getTurndown(state: SelectionState, config?: MarkdownConfig) {
   if (!state.turndown) {
     state.turndown = new TurndownService({
-      headingStyle: 'atx',
-      codeBlockStyle: 'fenced',
+      headingStyle: config?.headingStyle || 'atx',
+      codeBlockStyle: config?.codeBlockStyle || 'fenced',
       emDelimiter: '*',
       strongDelimiter: '**',
       bulletListMarker: '-',
@@ -22,12 +24,16 @@ function sanitizeFilename(title: string) {
     .replace(/[<>:"/\\|?*]/g, '_')
     .replace(/\s+/g, '_')
     .replace(/_+/g, '_')
-    .replace(/^_|_$/g, '')
+    .replace(/^_+|_+$/g, '')
     .substring(0, 80) || 'page'
 }
 
-function getPageFilename() {
-  return `${sanitizeFilename(document.title || 'untitled')}.md`
+function formatDate(date = new Date()) {
+  return date.toISOString().split('T')[0]
+}
+
+function getPageTitle() {
+  return sanitizeFilename(document.title || 'untitled')
 }
 
 function shouldSkipUrl(value: string) {
@@ -91,9 +97,76 @@ function normalizeHtmlForMarkdown(html: string) {
   return template.innerHTML.trim()
 }
 
-export function createMarkdownPayload(state: SelectionState, html: string) {
-  return {
-    markdown: getTurndown(state).turndown(normalizeHtmlForMarkdown(html)),
-    filename: getPageFilename(),
+export function createMarkdownPayload(
+  state: SelectionState,
+  html: string,
+  selector = 'body',
+) {
+  const config = state.config
+  const markdownConfig: MarkdownConfig | undefined = config
+    ? { headingStyle: config.headingStyle, codeBlockStyle: config.codeBlockStyle }
+    : undefined
+
+  let markdown = getTurndown(state, markdownConfig).turndown(normalizeHtmlForMarkdown(html))
+
+  if (config?.includeFrontmatter) {
+    const frontmatter = applyTemplate(config.frontmatterTemplate, {
+      title: getPageTitle(),
+      url: window.location.href,
+      selector,
+      date: formatDate(),
+    })
+    markdown = frontmatter + markdown
   }
+
+  const filename = applyTemplate(config?.filenameTemplate || '{{title}}.md', {
+    title: getPageTitle(),
+    date: formatDate(),
+    selector,
+  })
+
+  return { markdown, filename }
+}
+
+export async function embedImagesAsBase64(markdown: string): Promise<string> {
+  const imageRegex = /!\[([^\]]*)\]\(([^)\s]+)\)/g
+  const matches = Array.from(markdown.matchAll(imageRegex))
+  if (matches.length === 0)
+    return markdown
+
+  interface Replacement {
+    start: number
+    end: number
+    alt: string
+    dataUrl: string
+  }
+
+  const replacements: Replacement[] = []
+
+  for (const match of matches) {
+    const [full, alt, url] = match
+    if (!url || url.startsWith('data:'))
+      continue
+    try {
+      const response = await sendRuntimeMessage({ type: 'fetch-image', url }) as { dataUrl?: string, error?: string }
+      if (response.dataUrl && match.index !== undefined) {
+        replacements.push({
+          start: match.index,
+          end: match.index + full.length,
+          alt,
+          dataUrl: response.dataUrl,
+        })
+      }
+    }
+    catch {
+      // keep original url on failure
+    }
+  }
+
+  let result = markdown
+  for (let i = replacements.length - 1; i >= 0; i--) {
+    const r = replacements[i]
+    result = `${result.slice(0, r.start)}![${r.alt}](${r.dataUrl})${result.slice(r.end)}`
+  }
+  return result
 }

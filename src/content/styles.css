@@ -196,13 +196,6 @@
   width: 100%;
 }
 
-.content_script .docscrape-dialog-row-secondary > .docscrape-primary {
-  width: auto;
-  max-width: 100%;
-  justify-self: center;
-  padding: 0 18px;
-}
-
 .content_script .docscrape-dialog-actions-primary {
   display: flex;
   align-items: center;
@@ -585,11 +578,6 @@
   .content_script .docscrape-dialog-row-secondary {
     grid-template-columns: repeat(2, 1fr);
     gap: var(--docscrape-gap-sm);
-  }
-
-  .content_script .docscrape-dialog-row-secondary > .docscrape-primary {
-    justify-self: stretch;
-    width: 100%;
   }
 
   .content_script .docscrape-dialog-summary {
