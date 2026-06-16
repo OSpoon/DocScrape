@@ -71,10 +71,7 @@ export function ConfirmBar(props: {
               <span className="docscrape-dialog-title">{title}</span>
               <code className="docscrape-dialog-selector">{props.selector}</code>
             </div>
-            <div className="docscrape-dialog-tips">
-              Tips：
-              {tips}
-            </div>
+            <div className="docscrape-dialog-tips">{tips}</div>
             <div className="docscrape-dialog-actions-primary">
               <button className="docscrape-close" type="button" aria-label="退出" onClick={props.onClose}>
                 ×
