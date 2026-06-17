@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/chrome-manifest.json",
   "chromium:manifest_version": 3,
   "firefox:manifest_version": 2,
-  "version": "1.0.8",
+  "version": "1.0.9",
   "name": "DocScrape - 任意网页转 Markdown",
   "description": "在任意网页上选择 DOM 元素并转换为 Markdown 的浏览器扩展。",
   "icons": {
