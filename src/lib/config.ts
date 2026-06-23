@@ -29,6 +29,14 @@ export interface DocScrapeConfig {
   mediaDirectory: string
   /** 图片下载并发数 */
   imageConcurrency: number
+  /** GitHub personal access token，仅保存在浏览器本地存储 */
+  githubToken: string
+  /** GitHub 仓库，格式为 owner/repo */
+  githubRepository: string
+  /** Markdown 在仓库内保存的目录 */
+  githubDirectory: string
+  /** 目标分支；空值使用仓库默认分支 */
+  githubBranch: string
   /** Markdown 转换配置组，按 URL 正则选择 */
   profiles: MarkdownProfile[]
 }
@@ -57,22 +65,29 @@ export const defaultConfig: DocScrapeConfig = {
   packageImages: false,
   mediaDirectory: 'media',
   imageConcurrency: 3,
+  githubToken: '',
+  githubRepository: '',
+  githubDirectory: 'posts',
+  githubBranch: '',
   profiles: [defaultMarkdownProfile],
 }
 
 const STORAGE_KEY = 'docscrape_config'
 
-export async function getConfig(): Promise<DocScrapeConfig> {
+export async function getConfig(options: { includeSecrets?: boolean } = {}): Promise<DocScrapeConfig> {
   const result = await chrome.storage.local.get(STORAGE_KEY)
   const saved = (result[STORAGE_KEY] || {}) as Partial<DocScrapeConfig> & {
     headingStyle?: MarkdownProfile['headingStyle']
     codeBlockStyle?: MarkdownProfile['codeBlockStyle']
   }
-  return {
+  const config = {
     ...defaultConfig,
     ...saved,
     profiles: normalizeProfiles(saved.profiles, saved),
   }
+  if (options.includeSecrets === false)
+    config.githubToken = ''
+  return config
 }
 
 export async function saveConfig(config: DocScrapeConfig): Promise<void> {

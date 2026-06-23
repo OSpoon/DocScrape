@@ -1,3 +1,4 @@
+import { Download, Eye, Github, Plus } from 'lucide-react'
 import { marked } from 'marked'
 import { useMemo, useState } from 'react'
 import { uiMarker } from '../constants'
@@ -8,19 +9,21 @@ export function ConfirmBar(props: {
   filename: string
   markdown: string
   previewOpen: boolean
+  publishState: 'idle' | 'saving' | 'confirming' | 'done' | 'error'
   selector: string
   downloadState: 'idle' | 'saving' | 'done' | 'error'
   onAddMore: () => void
   onClose: () => void
   onCopy: () => void
   onDownload: () => void
+  onPublish: () => void
   onTogglePreview: () => void
 }) {
   const copyText = props.copyState === 'copied'
     ? '已复制'
     : props.copyState === 'failed' ? '复制失败' : '复制'
   const markdownSize = `${props.markdown.length} 字符`
-  const previewText = props.previewOpen ? '收起预览' : '预览'
+  const previewText = props.previewOpen ? '收起' : '预览'
   const title = props.count > 1 ? `已转换 ${props.count} 项` : '已转换'
   const [renderedView, setRenderedView] = useState(true)
   const renderedHtml = useMemo(() => marked.parse(props.markdown) as string, [props.markdown])
@@ -29,12 +32,24 @@ export function ConfirmBar(props: {
 
   function getDownloadText() {
     if (props.downloadState === 'saving')
-      return '保存中...'
+      return '处理中'
     if (props.downloadState === 'done')
-      return '已保存 ✓'
+      return '完成'
     if (props.downloadState === 'error')
-      return '保存失败，重试'
-    return '下载 Markdown'
+      return '重试'
+    return '下载'
+  }
+
+  function getPublishText() {
+    if (props.publishState === 'saving')
+      return '处理中'
+    if (props.publishState === 'confirming')
+      return '确认覆盖'
+    if (props.publishState === 'done')
+      return '完成'
+    if (props.publishState === 'error')
+      return '重试'
+    return '发布'
   }
 
   return (
@@ -79,14 +94,27 @@ export function ConfirmBar(props: {
             </div>
           </div>
           <div className="docscrape-dialog-row-secondary">
-            <button className="docscrape-secondary" type="button" onClick={props.onTogglePreview}>
-              {previewText}
+            <button className="docscrape-secondary" type="button" title={props.previewOpen ? '收起 Markdown 预览' : '查看 Markdown 预览'} onClick={props.onTogglePreview}>
+              <Eye className="docscrape-action-icon" aria-hidden="true" />
+              <span>{previewText}</span>
             </button>
-            <button className="docscrape-secondary" type="button" onClick={props.onAddMore}>
-              继续添加
+            <button className="docscrape-secondary" type="button" title="继续选择其他页面元素" onClick={props.onAddMore}>
+              <Plus className="docscrape-action-icon" aria-hidden="true" />
+              <span>添加</span>
             </button>
-            <button className="docscrape-primary" type="button" onClick={props.onDownload} disabled={props.downloadState === 'saving'}>
-              {getDownloadText()}
+            <button
+              className={`docscrape-secondary${props.publishState === 'confirming' ? ' docscrape-warning' : ''}`}
+              type="button"
+              title={props.publishState === 'confirming' ? '同名文件已存在，再次点击确认覆盖' : '发布到 GitHub'}
+              onClick={props.onPublish}
+              disabled={props.publishState === 'saving'}
+            >
+              <Github className="docscrape-action-icon" aria-hidden="true" />
+              <span>{getPublishText()}</span>
+            </button>
+            <button className="docscrape-primary" type="button" title="下载 Markdown" onClick={props.onDownload} disabled={props.downloadState === 'saving'}>
+              <Download className="docscrape-action-icon" aria-hidden="true" />
+              <span>{getDownloadText()}</span>
             </button>
           </div>
         </div>

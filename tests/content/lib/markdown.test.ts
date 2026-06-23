@@ -140,13 +140,10 @@ describe('createMarkdownPayload', () => {
     const state = {
       ...baseState(),
       config: {
+        ...defaultConfig,
         includeFrontmatter: true,
         frontmatterTemplate: '---\ntitle: {{title}}\n---\n\n',
         filenameTemplate: '{{title}}.md',
-        packageImages: false,
-        mediaDirectory: 'media',
-        imageConcurrency: 3,
-        profiles: defaultConfig.profiles,
       },
     }
     const { markdown } = createMarkdownPayload(state, '<p>text</p>', 'p')
@@ -158,13 +155,10 @@ describe('createMarkdownPayload', () => {
     const state = {
       ...baseState(),
       config: {
+        ...defaultConfig,
         includeFrontmatter: false,
         frontmatterTemplate: '',
         filenameTemplate: '{{title}}.md',
-        packageImages: false,
-        mediaDirectory: 'media',
-        imageConcurrency: 3,
-        profiles: defaultConfig.profiles,
       },
     }
     const { markdown } = createMarkdownPayload(state, '<p>text</p>', 'p')

@@ -119,6 +119,7 @@ export function useSelection(shadowRoot: ShadowRoot) {
           previewOpen: true,
           copyState: 'idle',
           downloadState: 'idle',
+          publishState: 'idle',
         })
       }
       catch (e) {
@@ -205,6 +206,46 @@ export function useSelection(shadowRoot: ShadowRoot) {
         })
     }
 
+    function publishSelected() {
+      const current = uiRef.current
+      if (current.mode !== 'selected' || current.publishState === 'saving')
+        return
+      const overwrite = current.publishState === 'confirming'
+      setUi({ ...current, publishState: 'saving' })
+      sendRuntimeMessage({
+        type: 'publish-github',
+        content: current.markdown,
+        filename: current.filename,
+        overwrite,
+      })
+        .then((response) => {
+          const result = response as { error?: string, requiresConfirmation?: boolean } | undefined
+          if (result?.error)
+            throw new Error(result.error)
+          if (result?.requiresConfirmation) {
+            setUi((latest) => {
+              if (latest.mode !== 'selected')
+                return latest
+              return { ...latest, publishState: 'confirming' }
+            })
+            return
+          }
+          setUi((latest) => {
+            if (latest.mode !== 'selected')
+              return latest
+            return { ...latest, publishState: 'done' }
+          })
+        })
+        .catch((error) => {
+          setUi((latest) => {
+            if (latest.mode !== 'selected')
+              return latest
+            return { ...latest, publishState: 'error' }
+          })
+          state.highlightOps?.showError(error instanceof Error ? error.message : 'GitHub 发布失败')
+        })
+    }
+
     function togglePreview() {
       setUi((current) => {
         if (current.mode !== 'selected')
@@ -271,6 +312,7 @@ export function useSelection(shadowRoot: ShadowRoot) {
       resetSelectionForAnotherPick,
       copySelected,
       downloadSelected,
+      publishSelected,
       togglePreview,
     }
 

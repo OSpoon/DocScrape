@@ -182,18 +182,30 @@
 
 .content_script .docscrape-dialog-row-secondary {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--docscrape-gap-md);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--docscrape-gap-sm);
   padding-top: 5px;
-  padding-left: 16px;
-  padding-right: 16px;
+  padding-left: 8px;
+  padding-right: 8px;
   border-top: 1px solid var(--docscrape-border-subtle);
   animation: docscrape-fade-in var(--docscrape-transition-fast);
 }
 
 .content_script .docscrape-dialog-row-secondary > button {
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
+  gap: var(--docscrape-gap-xs);
+  min-width: 0;
   width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.content_script .docscrape-action-icon {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
 }
 
 .content_script .docscrape-dialog-actions-primary {
@@ -289,6 +301,17 @@
 .content_script .docscrape-secondary:hover {
   background: #f8fafc;
   border-color: #94a3b8;
+}
+
+.content_script .docscrape-warning {
+  border-color: #d97706;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.content_script .docscrape-warning:hover {
+  border-color: #b45309;
+  background: #fef3c7;
 }
 
 .content_script .docscrape-primary {
@@ -576,8 +599,16 @@
   }
 
   .content_script .docscrape-dialog-row-secondary {
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--docscrape-gap-sm);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--docscrape-gap-xs);
+    padding-left: 2px;
+    padding-right: 2px;
+  }
+
+  .content_script .docscrape-dialog-row-secondary > button {
+    padding-right: 5px;
+    padding-left: 5px;
+    font-size: var(--docscrape-text-xs);
   }
 
   .content_script .docscrape-dialog-summary {

@@ -8,9 +8,15 @@ export type RuntimeMessage
       type: 'download'
       content: string
       filename: string
+      overwrite?: boolean
       packageImages?: boolean
       mediaDirectory?: string
       imageConcurrency?: number
+    }
+    | {
+      type: 'publish-github'
+      content: string
+      filename: string
     }
 
 export interface SelectionItem {
@@ -61,6 +67,7 @@ export type UiState
       previewOpen: boolean
       copyState: 'idle' | 'copied' | 'failed'
       downloadState: 'idle' | 'saving' | 'done' | 'error'
+      publishState: 'idle' | 'saving' | 'confirming' | 'done' | 'error'
     }
 
 export interface SelectionState {
@@ -83,5 +90,6 @@ export interface SelectionController {
   resetSelectionForAnotherPick: () => void
   copySelected: () => void
   downloadSelected: () => void
+  publishSelected: () => void
   togglePreview: () => void
 }

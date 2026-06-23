@@ -131,22 +131,23 @@ button:focus-visible {
 
 .popup-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
 }
 
 .popup-btn {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  flex-direction: row;
+  align-items: center;
   justify-content: center;
+  gap: 6px;
   min-width: 0;
-  min-height: 72px;
-  padding: 10px 11px;
+  min-height: 66px;
+  padding: 9px 8px;
   border: 1px solid transparent;
   border-radius: var(--docscrape-radius-md);
   cursor: pointer;
-  text-align: left;
+  text-align: center;
   transition: background 0.12s ease, border-color 0.12s ease, transform 0.12s ease;
 }
 
@@ -181,8 +182,25 @@ button:focus-visible {
   background: #ffe4ef;
 }
 
-.popup-btn-title,
-.popup-btn-subtitle {
+.popup-btn-github {
+  border-color: var(--docscrape-border-strong);
+  background: var(--docscrape-surface);
+  color: var(--docscrape-text);
+}
+
+.popup-btn-github:hover:not(:disabled) {
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+
+.popup-btn-warning,
+.popup-btn-warning:hover:not(:disabled) {
+  border-color: #d97706;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.popup-btn-title {
   display: block;
   max-width: 100%;
   overflow: hidden;
@@ -190,16 +208,15 @@ button:focus-visible {
   white-space: nowrap;
 }
 
-.popup-btn-title {
-  font-size: 14px;
-  font-weight: 750;
+.popup-btn-icon {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
 }
 
-.popup-btn-subtitle {
-  margin-top: 4px;
-  color: currentColor;
-  font-size: 11px;
-  opacity: 0.72;
+.popup-btn-title {
+  font-size: 12px;
+  font-weight: 750;
 }
 
 .popup-status {
@@ -209,7 +226,8 @@ button:focus-visible {
   font-size: 12px;
 }
 
-.popup-status-done {
+.popup-status-downloaded,
+.popup-status-published {
   border: 1px solid var(--docscrape-success-border);
   background: var(--docscrape-success-bg);
   color: var(--docscrape-success);
@@ -219,4 +237,10 @@ button:focus-visible {
   border: 1px solid var(--docscrape-error-border);
   background: var(--docscrape-error-bg);
   color: var(--docscrape-error);
+}
+
+.popup-status-confirming {
+  border: 1px solid #fde68a;
+  background: #fffbeb;
+  color: #92400e;
 }

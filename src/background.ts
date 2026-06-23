@@ -1,3 +1,5 @@
+import { getConfig } from './lib/config'
+import { publishMarkdownToGitHub, testGitHubConnection } from './lib/github'
 import { clampImageConcurrency, createMarkdownMediaPackage, normalizeMediaDirectory } from './lib/media-package'
 import { sendTabMessageWithRetry } from './lib/tabs'
 
@@ -74,6 +76,13 @@ interface DownloadMessage {
   imageConcurrency?: number
 }
 
+interface GitHubMessage {
+  type?: string
+  content?: string
+  filename?: string
+  overwrite?: boolean
+}
+
 function getDownloadFilename(filename: string): string {
   const fallback = 'page.md'
   const name = String(filename || fallback)
@@ -124,9 +133,36 @@ function doDownload(message: DownloadMessage): Promise<void> {
 }
 
 browser.runtime.onMessage.addListener((message: unknown, _sender, sendResponse) => {
-  const msg = message as DownloadMessage
+  const msg = message as DownloadMessage & GitHubMessage
   if (msg?.type === 'download') {
     doDownload(msg)
+      .then(() => sendResponse({ success: true }))
+      .catch((err: Error) => sendResponse({ error: err.message }))
+  }
+  else if (msg?.type === 'publish-github') {
+    getConfig()
+      .then(config => publishMarkdownToGitHub(
+        msg.content || '',
+        getDownloadFilename(msg.filename || 'page.md'),
+        {
+          token: config.githubToken,
+          repository: config.githubRepository,
+          directory: config.githubDirectory,
+          branch: config.githubBranch,
+        },
+        Boolean(msg.overwrite),
+      ))
+      .then(result => sendResponse({ success: true, ...result }))
+      .catch((err: Error) => sendResponse({ error: err.message }))
+  }
+  else if (msg?.type === 'test-github') {
+    getConfig()
+      .then(config => testGitHubConnection({
+        token: config.githubToken,
+        repository: config.githubRepository,
+        directory: config.githubDirectory,
+        branch: config.githubBranch,
+      }))
       .then(() => sendResponse({ success: true }))
       .catch((err: Error) => sendResponse({ error: err.message }))
   }

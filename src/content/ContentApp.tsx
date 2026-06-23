@@ -18,11 +18,13 @@ export default function ContentApp({ shadowRoot }: { shadowRoot: ShadowRoot }) {
           filename={ui.filename}
           markdown={ui.markdown}
           previewOpen={ui.previewOpen}
+          publishState={ui.publishState}
           selector={ui.selector}
           onAddMore={() => controllerRef.current?.addMoreSelection()}
           onClose={() => controllerRef.current?.exitSelection()}
           onCopy={() => controllerRef.current?.copySelected()}
           onDownload={() => controllerRef.current?.downloadSelected()}
+          onPublish={() => controllerRef.current?.publishSelected()}
           onTogglePreview={() => controllerRef.current?.togglePreview()}
         />
       )}

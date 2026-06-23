@@ -12,7 +12,7 @@ export function useConfig(stateRef: React.MutableRefObject<SelectionState>) {
     const state = stateRef.current
 
     function loadConfig() {
-      return getConfig().then((config) => {
+      return getConfig({ includeSecrets: false }).then((config) => {
         state.config = config
         state.turndown = null // force TurndownService re-creation
       })

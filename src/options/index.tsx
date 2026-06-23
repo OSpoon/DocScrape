@@ -1,7 +1,9 @@
 import type { DocScrapeConfig, MarkdownProfile } from '../lib/config'
+import { ExternalLink } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { defaultConfig, defaultMarkdownProfile, getConfig, normalizeProfile, normalizeProfiles, saveConfig } from '../lib/config'
+import { getFineGrainedTokenUrl } from '../lib/github'
 import { clampImageConcurrency, normalizeMediaDirectory } from '../lib/media-package'
 
 const iconUrl = browser.runtime.getURL('icons/icon.png')
@@ -10,6 +12,8 @@ function OptionsPage() {
   const [config, setConfig] = useState<DocScrapeConfig | null>(null)
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [githubStatus, setGithubStatus] = useState<'idle' | 'testing' | 'done' | 'error'>('idle')
+  const [githubMessage, setGithubMessage] = useState('')
 
   useEffect(() => {
     getConfig().then(setConfig)
@@ -75,6 +79,25 @@ function OptionsPage() {
     setSaved(false)
   }
 
+  async function testGitHub() {
+    if (!config)
+      return
+    setGithubStatus('testing')
+    setGithubMessage('')
+    try {
+      await saveConfig(config)
+      const result = await browser.runtime.sendMessage({ type: 'test-github' }) as { success?: boolean, error?: string }
+      if (result?.error)
+        throw new Error(result.error)
+      setGithubStatus('done')
+      setGithubMessage('连接成功，仓库可访问。')
+    }
+    catch (error) {
+      setGithubStatus('error')
+      setGithubMessage(error instanceof Error ? error.message : '连接失败')
+    }
+  }
+
   return (
     <div className="options-container">
       <header className="options-header">
@@ -120,6 +143,72 @@ function OptionsPage() {
           </div>
         )}
 
+      </section>
+
+      <section className="options-section">
+        <h2>GitHub 发布</h2>
+        <p className="options-section-desc">转换后的 Markdown 可发布到指定仓库。凭据仅保存在当前浏览器的本地存储中。</p>
+        <div className="options-field">
+          <label htmlFor="githubRepository">仓库</label>
+          <input
+            id="githubRepository"
+            type="text"
+            value={config.githubRepository}
+            placeholder="owner/repo 或 GitHub 仓库 URL"
+            onChange={e => update('githubRepository', e.target.value)}
+          />
+        </div>
+        <div className="options-field">
+          <label htmlFor="githubToken">Personal access token</label>
+          <input
+            id="githubToken"
+            type="password"
+            value={config.githubToken}
+            placeholder="github_pat_..."
+            autoComplete="off"
+            onChange={e => update('githubToken', e.target.value)}
+          />
+          <span className="options-hint options-token-guide">
+            <a href={getFineGrainedTokenUrl(config.githubRepository)} target="_blank" rel="noreferrer">
+              创建 Token
+              <ExternalLink aria-hidden="true" />
+            </a>
+            <span>仅选择目标仓库，最小权限为 Contents 读写。</span>
+          </span>
+        </div>
+        <div className="options-profile-grid">
+          <div className="options-field">
+            <label htmlFor="githubDirectory">目录</label>
+            <input
+              id="githubDirectory"
+              type="text"
+              value={config.githubDirectory}
+              placeholder="posts"
+              onChange={e => update('githubDirectory', e.target.value)}
+            />
+          </div>
+          <div className="options-field">
+            <label htmlFor="githubBranch">分支（可选）</label>
+            <input
+              id="githubBranch"
+              type="text"
+              value={config.githubBranch}
+              placeholder="留空使用默认分支"
+              onChange={e => update('githubBranch', e.target.value)}
+            />
+          </div>
+        </div>
+        <div className="options-inline-actions">
+          <button
+            className="options-btn-secondary"
+            type="button"
+            disabled={githubStatus === 'testing' || !config.githubToken.trim() || !config.githubRepository.trim()}
+            onClick={testGitHub}
+          >
+            {githubStatus === 'testing' ? '测试中...' : '测试连接'}
+          </button>
+          {githubMessage && <span className={`options-message options-message-${githubStatus}`}>{githubMessage}</span>}
+        </div>
       </section>
 
       <section className="options-section">
