@@ -1,107 +1,113 @@
-[powered-image]: https://img.shields.io/badge/Powered%20by-Extension.js-0971fe
-[powered-url]: https://extension.js.org
-
-[![Powered by Extension.js][powered-image]][powered-url]
-
 # DocScrape
 
-> 在任意网页上选择 DOM 元素并转换为 Markdown 的浏览器扩展。
+将网页内容整理为 Markdown，支持选取页面区域、整页导出、图片打包和 GitHub 发布。
 
-![screenshot](./public/screenshot.png)
+## 使用预览
 
-**功能亮点**：
+<div align="center">
+  <img src="./docs/assets/screenshot-01.png" alt="选择页面区域" width="49%">
+  <img src="./docs/assets/screenshot-02.png" alt="预览并导出 Markdown" width="49%">
+</div>
 
-- 在网页上点选元素，实时高亮预览
-- 自动打开 Markdown 预览，支持渲染 / 源码切换
-- 一键复制或下载 Markdown
-- 支持多选合并导出
-- 可选 YAML frontmatter（标题、URL、日期）
-- 可选将图片转为 Base64 嵌入 Markdown
-- 通过选项页自定义导出行为
+## 主要功能
 
-## 本地运行
+- 点选网页中的标题、正文、列表、代码块等内容
+- 连续选取多个页面区域并合并导出
+- 预览 Markdown 渲染效果或查看源码
+- 复制或下载 Markdown 文件
+- 将 Markdown 与网页图片打包为 ZIP
+- 为不同网站配置独立的转换规则
+- 将 Markdown 发布到 GitHub 仓库
 
-```bash
-git clone <repo-url>
-cd doc-scrape
-pnpm install
-pnpm dev
-```
+## 开始使用
 
-执行后会自动打开浏览器窗口并加载扩展。
+点击浏览器工具栏中的 DocScrape 图标，可以选择：
 
-## 使用方式
+- **选取**：在当前网页中点选需要转换的内容
+- **下载**：将整个页面保存为 Markdown
+- **GitHub**：将整个页面发布到已配置的 GitHub 仓库
 
-1. 在网页空白处右键 → **选择导出**，进入元素选择模式
-2. 鼠标悬停高亮目标元素，点击即可选中
-3. 选中后自动弹出确认栏和 Markdown 预览
-4. 点击**下载 Markdown**保存文件，或点击**复制**到剪贴板
-5. 按 `ESC` 可重新选择，再按一次 `ESC` 退出
+也可以在网页空白处打开右键菜单，使用 **选择导出** 或 **全页导出**。
 
-右键菜单还提供**全页导出**，直接将整个页面转为 Markdown。
+## 选取网页内容
 
-## 自定义设置
+1. 点击 **选取**进入选择模式。
+2. 移动鼠标查看高亮区域，点击需要的内容。
+3. 在底部操作栏中预览、复制、添加其他区域、发布或下载。
+4. 点击 **添加**可以继续选取更多内容。
+5. 按 `Esc` 返回选择模式；再次按 `Esc` 退出。
 
-右键扩展图标 → **选项**，可配置：
+多个选取区域会按照选择顺序合并到同一个 Markdown 文件中。
 
-- 文件名模板
-- YAML frontmatter 开关与模板
-- 图片是否转为 Base64 嵌入
-- Markdown 标题风格与代码块风格
+## 发布到 GitHub
 
-修改设置后无需刷新页面，新选择会立即生效。
+首次发布前，在 DocScrape 设置页中配置 GitHub：
 
-## 项目结构
+1. 填写目标仓库，例如 `owner/repo`，也可以粘贴完整仓库 URL。
+2. 点击 **创建 Token**跳转到 GitHub。
+3. 仅选择目标仓库，授予最小的 `Contents: Read and write` 权限。
+4. 将生成的 Fine-grained Token 粘贴回设置页。
+5. 点击 **测试连接**确认配置有效。
+6. 根据需要填写保存目录和分支；分支留空时使用默认分支。
 
-```
-src/
-├── background.ts        # 后台脚本
-├── content/             # 内容脚本与 UI
-│   ├── components/      # React 组件
-│   ├── hooks/           # 状态逻辑
-│   ├── lib/             # DOM / Markdown / 消息工具
-│   ├── scripts.tsx      # 内容脚本入口
-│   └── styles.css       # 浮层样式
-├── lib/                 # 扩展全局共享库
-│   └── config.ts        # 配置存储
-├── options/             # 选项页
-├── options.html         # 选项页入口
-└── manifest.json        # 扩展清单
-```
+发布时：
 
-## 常用命令
+- 新文件会直接创建。
+- 空仓库会自动完成首次提交。
+- 同名文件不会立即覆盖，需要再次点击 **确认覆盖**。
+- 当前只发布 Markdown，文中的远程图片链接保持不变。
 
-### 开发
+## 图片打包
 
-```bash
-pnpm dev
-pnpm dev -- --browser=chrome
-pnpm dev -- --browser=firefox
-```
+在设置页启用 **将 Markdown 与图片打包为 ZIP** 后，下载操作会：
 
-### 构建
+- 下载 Markdown 中引用的远程图片
+- 将图片保存到指定媒体目录
+- 把 Markdown 中的图片地址改为相对路径
+- 将 Markdown 和图片打包为一个 ZIP 文件
 
-```bash
-pnpm build              # 默认构建 Chromium 版本
-pnpm build:chrome       # 指定 Chrome
-pnpm build:zip:chrome   # 打包为 zip
-```
+可以设置 1-8 个并发下载任务。建议使用 2-4；图片下载失败时会保留原始 URL，不会中断 Markdown 导出。
 
-### 预览
+## 自定义转换规则
 
-```bash
-pnpm preview
-```
+不同网站的页面结构可能不同。可以在设置页创建多套 Markdown 转换规则，并通过页面 URL 正则自动匹配。
 
-## 技术栈
+每套规则可以调整：
 
-- [Extension.js](https://extension.js.org) — 浏览器扩展开发框架
-- React 18 + TypeScript
-- Turndown + turndown-plugin-gfm — HTML 转 Markdown
-- marked — Markdown 渲染预览
-- Shadow DOM — 样式隔离，避免与宿主页面冲突
+- 标题、分割线和换行格式
+- 代码块及围栏字符
+- 列表、斜体和加粗符号
+- 行内链接或引用链接
+- `pre` 内容的原始格式保留
 
-## 了解更多
+规则按照设置页中的顺序匹配，第一条命中的规则生效。URL 正则留空的规则作为默认规则。
 
-- [Extension.js 文档](https://extension.js.org)
-- [React content script 示例](https://github.com/extension-js/examples/tree/main/examples/react)
+## 文件与 Frontmatter
+
+设置页支持自定义文件名和 YAML frontmatter。
+
+文件名模板可使用：
+
+- `{{title}}`：页面标题
+- `{{date}}`：导出日期
+- `{{selector}}`：选取内容的页面选择器
+
+Frontmatter 模板还可以使用 `{{url}}` 记录来源页面。
+
+## 数据与隐私
+
+- 设置和 GitHub Token 保存在浏览器扩展的本地存储中。
+- Token 不会写入 Markdown，也不会提供给正在浏览的网页。
+- GitHub 发布只会将用户确认的 Markdown 发送到所配置的仓库。
+- 图片打包只会请求 Markdown 中引用的图片地址。
+- DocScrape 不使用浏览器同步存储上传配置。
+
+GitHub Token 应仅授权目标仓库，并设置合理的有效期。不再使用 DocScrape 时，建议在 GitHub 中撤销对应 Token。
+
+## 问题反馈
+
+使用中遇到问题，可以在 [GitHub Issues](https://github.com/OSpoon/doc-scrape/issues) 提交反馈。
+
+## License
+
+[MIT](./LICENSE)

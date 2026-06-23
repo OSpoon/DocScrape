@@ -129,7 +129,7 @@ function Popup() {
           <img className="popup-icon" src={iconUrl} alt="" aria-hidden="true" />
           <div>
             <h1>DocScrape</h1>
-            <span>任意网页转 Markdown</span>
+            <span>网页内容整理为 Markdown</span>
           </div>
         </div>
         <button className="popup-settings" type="button" onClick={openOptions} aria-label="打开设置">

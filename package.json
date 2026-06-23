@@ -4,7 +4,7 @@
   "version": "1.0.9",
   "private": true,
   "packageManager": "pnpm@10.28.2",
-  "description": "Browser extension to select HTML elements and convert them to Markdown.",
+  "description": "Organize web content as Markdown with selection, full-page export, image packaging, and GitHub publishing.",
   "author": {
     "name": "OSpoon",
     "email": "zxin088@email.com",

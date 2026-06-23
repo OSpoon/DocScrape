@@ -3,8 +3,8 @@
   "chromium:manifest_version": 3,
   "firefox:manifest_version": 2,
   "version": "1.0.9",
-  "name": "DocScrape - 任意网页转 Markdown",
-  "description": "在任意网页上选择 DOM 元素并转换为 Markdown 的浏览器扩展。",
+  "name": "DocScrape - 网页内容转 Markdown",
+  "description": "将网页内容整理为 Markdown，支持选取页面区域、整页导出、图片打包和 GitHub 发布。",
   "icons": {
     "16": "images/icon.png",
     "32": "images/icon.png",
